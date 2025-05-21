@@ -7,7 +7,7 @@ provider "kubernetes" {
 
 resource "kubernetes_namespace" "data_namespace" {
   metadata {
-    name = "data-processing"
+    name = "data-namespace"
     labels = {
       purpose = "data-lab"
     }
