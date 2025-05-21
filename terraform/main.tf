@@ -1,10 +1,8 @@
-provider "kubernetes" {
-  # This tells the provider to use the specified kubeconfig file.
-  # Ensure the path is correct for your user in the VM.
-  config_path = "~/.kube/config"
+# File: ~/my-sre-data-lab/terraform/main.tf
 
-  # Optional: You can also explicitly specify context if needed, but not usually for k3s default.
-  # config_context = "default"
+provider "kubernetes" {
+  # REMOVE OR COMMENT OUT THIS LINE:
+  # config_path = "~/.kube/config"
 }
 
 resource "kubernetes_namespace" "data_namespace" {
