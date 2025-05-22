@@ -1,4 +1,6 @@
 controller:
+  serviceType: NodePort
+  nodePort: 32000 # You can choose any port between 30000-32767. This makes it predictable.
   resources:
     requests:
       cpu: "500m"
@@ -6,7 +8,23 @@ controller:
     limits:
       cpu: "1"
       memory: "1.5Gi"
-agent:
+  # Recommended for k3s on a single node if you experience scheduling issues,
+  # though often not strictly necessary as k3s typically tolerates master taint.
+  # master: # Assuming your k3s node has the "node-role.kubernetes.io/control-plane:NoSchedule" taint
+  #   tolerations:
+  #   - key: "node-role.kubernetes.io/control-plane"
+  #     operator: "Exists"
+  #     effect: "NoSchedule"
+  # agent: # Agent section for dynamic agents, not the controller
+  #   resources:
+  #     requests:
+  #       cpu: "200m"
+  #       memory: "512Mi"
+  #     limits:
+  #       cpu: "500m"
+  #       memory: "1Gi"
+
+agent: # This block is for Jenkins build agents, not the controller itself. Keep it for completeness.
   resources:
     requests:
       cpu: "200m"
