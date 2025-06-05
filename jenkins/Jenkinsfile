@@ -1,0 +1,73 @@
+pipeline {
+    agent { kubernetes {
+        cloud 'kubernetes'
+        defaultContainer 'jnlp'
+        yaml """
+apiVersion: v1
+kind: Pod
+spec:
+  containers:
+  - name: python
+    image: python:3.9-slim-buster
+    command: ['cat']
+    tty: true
+  - name: docker
+    image: docker:dind # Docker-in-Docker for building images
+    securityContext:
+      privileged: true
+    args: ['dockerd-entrypoint.sh']
+    tty: true
+"""
+    }}
+
+    environment {
+        DOCKER_REGISTRY = 'your-docker-hub-username/my-data-app' // Replace with your Docker Hub
+        # Or setup a local registry if preferred
+    }
+
+    stages {
+        stage('Checkout') {
+            steps {
+                git branch: 'main', credentialsId: 'your-github-pat-credential-id', url: 'https://github.com/your-username/my-sre-data-lab.git'
+            }
+        }
+        stage('Build & Test ETL App') {
+            steps {
+                container('python') {
+                    dir('data-pipelines') {
+                        sh 'pip install --no-cache-dir -r requirements.txt'
+                        sh 'python -m pytest' // Assuming you have tests
+                    }
+                }
+            }
+        }
+        stage('Build Docker Image') {
+            steps {
+                container('docker') {
+                    dir('data-pipelines') {
+                        sh 'docker build -t ${DOCKER_REGISTRY}:${env.BUILD_NUMBER} .'
+                        withCredentials([usernamePassword(credentialsId: 'dockerhub-credentials', passwordVariable: 'secrets.GIT_SECRET' , usernameVariable: 'niyianderson' )]) {
+                            sh 'docker login -u ${DOCKER_USERNAME} -p ${DOCKER_PASSWORD}'
+                            sh 'docker push ${DOCKER_REGISTRY}:${env.BUILD_NUMBER}'
+                        }
+                    }
+                }
+            }
+        }
+        stage('Deploy to Kubernetes') {
+            steps {
+                container('jnlp') { // Use default container for kubectl
+                    dir('kubernetes') {
+                        sh "kubectl apply -f manifests/my-app-deployment.yaml --namespace data-processing"
+                        sh "kubectl set image deployment/my-etl-app my-etl-app=${DOCKER_REGISTRY}:${env.BUILD_NUMBER} --namespace data-processing"
+                    }
+                }
+            }
+        }
+    }
+    post {
+        always {
+            cleanWs()
+        }
+    }
+}
