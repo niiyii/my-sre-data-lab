@@ -1,0 +1,32 @@
+apiVersion: apps/v1
+kind: Deployment
+metadata:
+  name: my-etl-app
+  namespace: data-processing
+spec:
+  replicas: 1
+  selector:
+    matchLabels:
+      app: my-etl-app
+  template:
+    metadata:
+      labels:
+        app: my-etl-app
+    spec:
+      containers:
+      - name: my-etl-app
+        image: your-docker-hub-username/my-data-app:latest # Will be updated by Jenkins
+        env:
+        - name: KAFKA_BROKERS
+          value: "my-kafka-headless.data-processing.svc.cluster.local:9092"
+        - name: INPUT_TOPIC
+          value: "raw-data"
+        - name: OUTPUT_TOPIC
+          value: "processed-data"
+        resources: # Crucial for your limited RAM
+          requests:
+            cpu: "100m"
+            memory: "256Mi"
+          limits:
+            cpu: "300m"
+            memory: "512Mi"
